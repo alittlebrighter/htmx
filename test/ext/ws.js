@@ -206,22 +206,26 @@ describe("web-sockets extension", function () {
     })
 
     it('handles message from the server (blob, default)', function () {
+        htmx.config.wsBinaryType = "blob";
         var div = make('<div hx-ext="ws" ws-connect="ws://localhost:8080"><div id="d1">div1</div><div id="d2">div2</div></div>');
         this.tickMock();
 
         this.socketServer.emit('message', new Blob(["<div id=\"d1\">replaced</div>"]));
 
-        this.tickMock();
-        byId("d1").innerHTML.should.equal("replaced");
-        byId("d2").innerHTML.should.equal("div2");
+        setTimeout(function() {
+            byId("d1").innerHTML.should.equal("replaced");
+            byId("d2").innerHTML.should.equal("div2");
+        }, 10);
     })
 
     it('handles message from the server (arraybuffer)', function () {
+        htmx.config.wsBinaryType = "arraybuffer";
         var div = make('<div hx-ext="ws" ws-connect="ws://localhost:8080"><div id="d1">div1</div><div id="d2">div2</div></div>');
         this.tickMock();
 
         var enc = new TextEncoder();
-        this.socketServer.emit('message', enc.encode("<div id=\"d1\">replaced</div>"));
+        var toSend = enc.encode("<div id=\"d1\">replaced</div>");
+        this.socketServer.emit('message', new Uint8Array(toSend));
 
         this.tickMock();
         byId("d1").innerHTML.should.equal("replaced");
