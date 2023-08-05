@@ -101,14 +101,23 @@ describe("web-sockets extension", function () {
         }, 10);
     })
 
+    // pulled from: https://developer.chrome.com/blog/how-to-convert-arraybuffer-to-and-from-string/
+    var str2ab = function(str) {
+        var buf = new ArrayBuffer(str.length*2); // 2 bytes for each char
+        var bufView = new Uint16Array(buf);
+        for (var i=0, strLen=str.length; i < strLen; i++) {
+            bufView[i] = str.charCodeAt(i);
+        }
+        return buf;
+    }
+
     it('handles message from the server (arraybuffer)', function () {
         htmx.config.wsBinaryType = "arraybuffer";
         var div = make('<div hx-ext="ws" ws-connect="ws://localhost:8080"><div id="d1">div1</div><div id="d2">div2</div></div>');
         this.tickMock();
 
-        var enc = new TextEncoder();
-        var toSend = enc.encode("<div id=\"d1\">replaced</div>");
-        this.socketServer.emit('message', new Uint8Array(toSend));
+        var toSend = str2ab("<div id=\"d1\">replaced</div>");
+        this.socketServer.emit('message', toSend);
 
         this.tickMock();
         byId("d1").innerHTML.should.equal("replaced");
