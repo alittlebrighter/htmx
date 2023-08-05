@@ -158,7 +158,8 @@ This extension adds support for WebSockets to htmx.  See /www/extensions/ws.md f
 				response.text()
 					.then(responseHandler);
 			} else { // arraybuffer
-				responseHandler(String.fromCharCode(new Uint8Array(response)));
+				var responseStr = String.fromCharCode.apply(null, new Uint16Array(response));
+				responseHandler(responseStr);
 			}
 		});
 
