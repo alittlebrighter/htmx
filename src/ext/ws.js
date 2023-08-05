@@ -122,12 +122,7 @@ This extension adds support for WebSockets to htmx.  See /www/extensions/ws.md f
 			return htmx.createWebSocket(wssSource)
 		});
 
-		socketWrapper.addEventListener('message', function (event) {
-			if (maybeCloseWebSocketSource(socketElt)) {
-				return;
-			}
-
-			var response = event.data;
+		var responseHandler = function (response) {
 			if (!api.triggerEvent(socketElt, "htmx:wsBeforeMessage", {
 				message: response,
 				socketWrapper: socketWrapper.publicInterface
@@ -151,6 +146,20 @@ This extension adds support for WebSockets to htmx.  See /www/extensions/ws.md f
 
 			api.settleImmediately(settleInfo.tasks);
 			api.triggerEvent(socketElt, "htmx:wsAfterMessage", { message: response, socketWrapper: socketWrapper.publicInterface })
+		}
+
+		socketWrapper.addEventListener('message', function (event) {
+			if (maybeCloseWebSocketSource(socketElt)) {
+				return;
+			}
+
+			var response = event.data;
+			if (socketWrapper.socket.binaryType === "blob") {
+				response.text()
+					.then(responseHandler);
+			} else { // arraybuffer
+				responseHandler(String.fromCharCode(new Uint8Array(response)));
+			}
 		});
 
 		// Put the WebSocket into the HTML Element's custom data.
