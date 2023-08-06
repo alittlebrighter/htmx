@@ -122,7 +122,23 @@ This extension adds support for WebSockets to htmx.  See /www/extensions/ws.md f
 			return htmx.createWebSocket(wssSource)
 		});
 
-		var responseHandler = function (response) {
+		var processFragment = function (response) {
+			var fragment = api.makeFragment(response);
+
+			if (fragment.children.length) {
+				var children = Array.from(fragment.children);
+				for (var i = 0; i < children.length; i++) {
+					api.oobSwap(api.getAttributeValue(children[i], "hx-swap-oob") || "true", children[i], settleInfo);
+				}
+			}
+		}
+
+		socketWrapper.addEventListener('message', function (event) {
+			if (maybeCloseWebSocketSource(socketElt)) {
+				return;
+			}
+
+			var response = event.data;
 			if (!api.triggerEvent(socketElt, "htmx:wsBeforeMessage", {
 				message: response,
 				socketWrapper: socketWrapper.publicInterface
@@ -135,32 +151,18 @@ This extension adds support for WebSockets to htmx.  See /www/extensions/ws.md f
 			});
 
 			var settleInfo = api.makeSettleInfo(socketElt);
-			var fragment = api.makeFragment(response);
-
-			if (fragment.children.length) {
-				var children = Array.from(fragment.children);
-				for (var i = 0; i < children.length; i++) {
-					api.oobSwap(api.getAttributeValue(children[i], "hx-swap-oob") || "true", children[i], settleInfo);
-				}
+			if (typeof response === "string") {
+				processFragment(response);
+			} else if (socketWrapper.socket.binaryType === "arraybuffer") {
+				responseStr = String.fromCharCode.apply(null, new Uint16Array(response));
+				processFragment(responseStr);
+			} else { // binaryType === "blob"
+				response.text()
+					.then(processFragment);
 			}
 
 			api.settleImmediately(settleInfo.tasks);
 			api.triggerEvent(socketElt, "htmx:wsAfterMessage", { message: response, socketWrapper: socketWrapper.publicInterface })
-		}
-
-		socketWrapper.addEventListener('message', function (event) {
-			if (maybeCloseWebSocketSource(socketElt)) {
-				return;
-			}
-
-			var response = event.data;
-			if (socketWrapper.socket.binaryType === "blob") {
-				response.text()
-					.then(responseHandler);
-			} else { // arraybuffer
-				var responseStr = String.fromCharCode.apply(null, new Uint16Array(response));
-				responseHandler(responseStr);
-			}
 		});
 
 		// Put the WebSocket into the HTML Element's custom data.
