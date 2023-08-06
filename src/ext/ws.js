@@ -124,6 +124,7 @@ This extension adds support for WebSockets to htmx.  See /www/extensions/ws.md f
 
 		var processFragment = function (response) {
 			var fragment = api.makeFragment(response);
+			var settleInfo = api.makeSettleInfo(socketElt);
 
 			if (fragment.children.length) {
 				var children = Array.from(fragment.children);
@@ -131,6 +132,8 @@ This extension adds support for WebSockets to htmx.  See /www/extensions/ws.md f
 					api.oobSwap(api.getAttributeValue(children[i], "hx-swap-oob") || "true", children[i], settleInfo);
 				}
 			}
+
+			api.settleImmediately(settleInfo.tasks);
 		}
 
 		socketWrapper.addEventListener('message', function (event) {
@@ -150,7 +153,6 @@ This extension adds support for WebSockets to htmx.  See /www/extensions/ws.md f
 				response = extension.transformResponse(response, null, socketElt);
 			});
 
-			var settleInfo = api.makeSettleInfo(socketElt);
 			if (typeof response === "string") {
 				processFragment(response);
 			} else if (socketWrapper.socket.binaryType === "arraybuffer") {
@@ -158,10 +160,13 @@ This extension adds support for WebSockets to htmx.  See /www/extensions/ws.md f
 				processFragment(responseStr);
 			} else { // binaryType === "blob"
 				response.text()
-					.then(processFragment);
+					.then(processFragment)
+					.then(function() {
+						api.triggerEvent(socketElt, "htmx:wsAfterMessage", { message: response, socketWrapper: socketWrapper.publicInterface })
+					});
+				return;
 			}
 
-			api.settleImmediately(settleInfo.tasks);
 			api.triggerEvent(socketElt, "htmx:wsAfterMessage", { message: response, socketWrapper: socketWrapper.publicInterface })
 		});
 
