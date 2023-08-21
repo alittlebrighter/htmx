@@ -156,7 +156,7 @@ This extension adds support for WebSockets to htmx.  See /www/extensions/ws.md f
 			if (typeof response === "string") {
 				processFragment(response);
 			} else if (socketWrapper.socket.binaryType === "arraybuffer") {
-				responseStr = String.fromCharCode.apply(null, new Uint16Array(response));
+				var responseStr = String.fromCharCode.apply(null, new Uint16Array(response));
 				processFragment(responseStr);
 			} else { // binaryType === "blob"
 				response.text()
