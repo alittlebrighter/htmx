@@ -222,13 +222,13 @@ describe("web-sockets extension", function () {
         htmx.config.wsBinaryType = "blob";
         var div = make('<div hx-ext="ws" ws-connect="ws://localhost:8080"><div id="d1">div1</div><div id="d2">div2</div></div>');
         this.tickMock();
+        this.tickMock();
 
-        this.socketServer.emit('message', new Blob(["<div id=\"d1\">replaced</div>"]));
-
-        setTimeout(function() {
-            byId("d1").innerHTML.should.equal("replaced");
-            byId("d2").innerHTML.should.equal("div2");
-        }, 10);
+        return new Promise((resolve) => div.addEventListener("htmx:wsAfterMessage", resolve))
+            .then(() => {
+                byId("d1").innerHTML.should.equal("replaced");
+                byId("d2").innerHTML.should.equal("div2");
+            });
     })
 
     // pulled from: https://developer.chrome.com/blog/how-to-convert-arraybuffer-to-and-from-string/
