@@ -212,12 +212,12 @@ describe("web-sockets extension", function () {
 
         this.socketServer.emit('message', "<div id=\"d1\">replaced</div>");
 
-        setTimeout(function() {
-            byId("d1").innerHTML.should.equal("replaced");
-            byId("d2").innerHTML.should.equal("div2");
-        }, 10);
+        this.tickMock()
+
+        byId("d1").innerHTML.should.equal("replaced");
+        byId("d2").innerHTML.should.equal("div2");
     })
-    
+
     it('handles message from the server (blob, default)', function () {
         htmx.config.wsBinaryType = "blob";
         var div = make('<div hx-ext="ws" ws-connect="ws://localhost:8080"><div id="d1">div1</div><div id="d2">div2</div></div>');
